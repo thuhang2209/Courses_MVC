@@ -1,0 +1,128 @@
+﻿@{
+    ViewData["Title"] = "Báo cáo thống kê thực tế";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4 animate-slide-up">
+    <div>
+        <h2 class="fw-800 mb-1 text-dark">Hệ thống Dashboard</h2>
+        <p class="text-muted small">Dữ liệu thực tế từ: <span class="badge bg-light text-dark border">QuanLyHocPhan</span></p>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-white border rounded-pill px-4 shadow-sm fw-bold" onclick="location.reload()">
+            <i class="bi bi-arrow-clockwise"></i> Làm mới
+        </button>
+        <button class="btn btn-dark rounded-pill px-4 shadow-sm fw-bold" onclick="window.print()">
+            <i class="bi bi-printer me-2"></i> In báo cáo
+        </button>
+    </div>
+</div>
+
+<div class="row g-4 mb-5 animate-slide-up">
+    <div class="col-md-6 col-lg-4">
+        <div class="custom-card p-4 border-0 shadow-sm text-center position-relative overflow-hidden"
+             style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white;">
+            <i class="bi bi-book position-absolute opacity-10" style="font-size: 5rem; right: -10px; top: -10px;"></i>
+            <p class="mb-1 opacity-75 fw-semibold text-uppercase small">Tổng số học phần</p>
+            <h2 class="display-5 fw-800 mb-0">@ViewBag.TongHocPhan</h2>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-4">
+        <div class="custom-card p-4 border-0 shadow-sm text-center">
+            <p class="mb-1 text-muted fw-semibold text-uppercase small">Tổng số tín chỉ</p>
+            <h2 class="display-5 fw-800 mb-0 text-primary">@ViewBag.TongTinChi</h2>
+        </div>
+    </div>
+    <div class="col-md-12 col-lg-4">
+        <div class="custom-card p-4 border-0 shadow-sm text-center">
+            <p class="mb-1 text-muted fw-semibold text-uppercase small">Số tín chỉ trung bình</p>
+            @{
+                double avg = ViewBag.TongHocPhan > 0 ? (double)ViewBag.TongTinChi / ViewBag.TongHocPhan : 0;
+            }
+            <h2 class="display-5 fw-800 mb-0 text-success">@avg.ToString("0.0")</h2>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 animate-slide-up" style="animation-delay: 0.2s;">
+    <div class="col-12">
+        <div class="custom-card p-5 border-0 shadow-sm">
+            <div class="d-flex align-items-center mb-4">
+                <div class="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
+                    <i class="bi bi-bar-chart-line-fill text-primary fs-4"></i>
+                </div>
+                <h5 class="fw-bold mb-0">Phân tích cơ cấu học phần theo tín chỉ</h5>
+            </div>
+
+            <div style="height: 400px; width: 100%;">
+                <canvas id="realtimeChart"></canvas>
+            </div>
+
+            <div class="mt-4 pt-4 border-top text-center">
+                <p class="text-muted mb-0 small">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Biểu đồ tự động cập nhật dựa trên dữ liệu <code>GROUP BY SoTinChi</code> từ SQL Server.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Cấu hình Font chữ Global
+        Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+        Chart.defaults.color = '#64748b';
+
+        // Lấy dữ liệu từ ViewBag (Controller gửi xuống)
+        // Chuyển đổi List C# sang mảng Javascript
+        const labelsTinChi = @Html.Raw(Json.Serialize(ViewBag.TinChi));
+        const dataSoLuong = @Html.Raw(Json.Serialize(ViewBag.SoLuong));
+
+        const ctx = document.getElementById('realtimeChart').getContext('2d');
+
+        // Tạo hiệu ứng Gradient cho cột biểu đồ
+        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, '#6366f1');
+        gradient.addColorStop(1, '#a855f7');
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labelsTinChi.map(t => t + " Tín chỉ"), // Biến số 2 thành "2 Tín chỉ"
+                datasets: [{
+                    label: 'Số lượng học phần',
+                    data: dataSoLuong,
+                    backgroundColor: gradient,
+                    borderRadius: 15,
+                    barThickness: 50,
+                    hoverBackgroundColor: '#4f46e5'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#1e293b',
+                        padding: 12,
+                        cornerRadius: 10,
+                        displayColors: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#f1f5f9', drawBorder: false },
+                        ticks: { stepSize: 1, font: { weight: '600' } }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { weight: '600' } }
+                    }
+                }
+            }
+        });
+    </script>
+}

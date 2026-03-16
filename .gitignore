@@ -1,0 +1,23 @@
+﻿# Tạo file .gitignore
+@"
+## Visual Studio
+.vs/
+*.vsidx
+*.vsix
+*.suo
+*.user
+*.userosscache
+
+## Build results
+bin/
+obj/
+[Bb]uild/
+
+## Database files
+*.mdf
+*.ldf
+
+## Runtime
+*.db
+*.log
+"@ | Out-File -FilePath .gitignore -Encoding UTF8
