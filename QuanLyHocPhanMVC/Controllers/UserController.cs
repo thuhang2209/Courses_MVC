@@ -1,11 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
 using System.Data.SqlClient;
 using QuanLyHocPhanMVC.Models;
 
 namespace QuanLyHocPhanMVC.Controllers
 {
-    public class HocPhanController : Controller
+    public class UserController : Controller
     {
         string connectionString = @"Server=DESKTOP-AHVKPFM\SQLEXPRESS01;Database=QuanLyHocPhan;Trusted_Connection=True;";
 
@@ -16,7 +16,14 @@ namespace QuanLyHocPhanMVC.Controllers
                 return RedirectToAction("Login", "Account");
             }
 
-            List<HocPhan> list = new List<HocPhan>();
+            string userRole = HttpContext.Session.GetString("Role");
+            if (userRole != "Admin")
+            {
+                ViewBag.ErrorMessage = "Bạn không có quyền truy cập!";
+                return View("AccessDenied");
+            }
+
+            List<NguoiDung> list = new List<NguoiDung>();
 
             int pageSize = 10;
             int start = (page - 1) * pageSize;
@@ -29,17 +36,17 @@ namespace QuanLyHocPhanMVC.Controllers
 
                 if (string.IsNullOrEmpty(search))
                 {
-                    query = @"SELECT * FROM HocPhan
-                              ORDER BY IDHocPhan
+                    query = @"SELECT * FROM NguoiDung
+                              ORDER BY ID
                               OFFSET @start ROWS
                               FETCH NEXT @size ROWS ONLY";
                 }
                 else
                 {
-                    query = @"SELECT * FROM HocPhan
-                              WHERE TenHocPhan LIKE @search
-                              OR MaHocPhan LIKE @search
-                              ORDER BY IDHocPhan
+                    query = @"SELECT * FROM NguoiDung
+                              WHERE Username LIKE @search
+                              OR Role LIKE @search
+                              ORDER BY ID
                               OFFSET @start ROWS
                               FETCH NEXT @size ROWS ONLY";
                 }
@@ -57,15 +64,14 @@ namespace QuanLyHocPhanMVC.Controllers
 
                 while (reader.Read())
                 {
-                    HocPhan hp = new HocPhan();
+                    NguoiDung user = new NguoiDung();
 
-                    hp.IDHocPhan = (int)reader["IDHocPhan"];
-                    hp.MaHocPhan = reader["MaHocPhan"].ToString();
-                    hp.TenHocPhan = reader["TenHocPhan"].ToString();
-                    hp.SoTinChi = (int)reader["SoTinChi"];
-                    hp.MoTa = reader["MoTa"].ToString();
+                    user.ID = (int)reader["ID"];
+                    user.Username = reader["Username"].ToString();
+                    user.Password = reader["Password"].ToString();
+                    user.Role = reader["Role"].ToString();
 
-                    list.Add(hp);
+                    list.Add(user);
                 }
             }
 
@@ -77,12 +83,13 @@ namespace QuanLyHocPhanMVC.Controllers
             {
                 conn.Open();
 
-                SqlCommand cmd = new SqlCommand("SELECT COUNT(*) FROM HocPhan", conn);
+                SqlCommand cmd = new SqlCommand("SELECT COUNT(*) FROM NguoiDung", conn);
 
                 totalRows = (int)cmd.ExecuteScalar();
             }
 
             ViewBag.TotalPages = (int)Math.Ceiling((double)totalRows / pageSize);
+            ViewBag.Search = search;
 
             return View(list);
         }
@@ -105,7 +112,7 @@ namespace QuanLyHocPhanMVC.Controllers
         }
 
         [HttpPost]
-        public IActionResult Create(HocPhan hp)
+        public IActionResult Create(NguoiDung user)
         {
             if (HttpContext.Session.GetString("Username") == null)
             {
@@ -119,21 +126,38 @@ namespace QuanLyHocPhanMVC.Controllers
                 return View("AccessDenied");
             }
 
+            if (string.IsNullOrEmpty(user.Username) || string.IsNullOrEmpty(user.Password))
+            {
+                ViewBag.Error = "Username và Password không được để trống!";
+                return View();
+            }
+
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 conn.Open();
 
-                string query = @"INSERT INTO HocPhan
-                                (MaHocPhan,TenHocPhan,SoTinChi,MoTa)
+                // Kiểm tra username đã tồn tại
+                string checkQuery = "SELECT COUNT(*) FROM NguoiDung WHERE Username=@username";
+                SqlCommand checkCmd = new SqlCommand(checkQuery, conn);
+                checkCmd.Parameters.AddWithValue("@username", user.Username);
+                
+                int count = (int)checkCmd.ExecuteScalar();
+                if (count > 0)
+                {
+                    ViewBag.Error = "Username này đã tồn tại!";
+                    return View();
+                }
+
+                string query = @"INSERT INTO NguoiDung
+                                (Username, Password, Role)
                                 VALUES
-                                (@ma,@ten,@stc,@mota)";
+                                (@username, @password, @role)";
 
                 SqlCommand cmd = new SqlCommand(query, conn);
 
-                cmd.Parameters.AddWithValue("@ma", hp.MaHocPhan);
-                cmd.Parameters.AddWithValue("@ten", hp.TenHocPhan);
-                cmd.Parameters.AddWithValue("@stc", hp.SoTinChi);
-                cmd.Parameters.AddWithValue("@mota", hp.MoTa);
+                cmd.Parameters.AddWithValue("@username", user.Username);
+                cmd.Parameters.AddWithValue("@password", user.Password);
+                cmd.Parameters.AddWithValue("@role", user.Role ?? "GiaoVien");
 
                 cmd.ExecuteNonQuery();
             }
@@ -155,13 +179,13 @@ namespace QuanLyHocPhanMVC.Controllers
                 return View("AccessDenied");
             }
 
-            HocPhan hp = new HocPhan();
+            NguoiDung user = new NguoiDung();
 
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 conn.Open();
 
-                string query = "SELECT * FROM HocPhan WHERE IDHocPhan=@id";
+                string query = "SELECT * FROM NguoiDung WHERE ID=@id";
 
                 SqlCommand cmd = new SqlCommand(query, conn);
 
@@ -171,19 +195,22 @@ namespace QuanLyHocPhanMVC.Controllers
 
                 if (reader.Read())
                 {
-                    hp.IDHocPhan = (int)reader["IDHocPhan"];
-                    hp.MaHocPhan = reader["MaHocPhan"].ToString();
-                    hp.TenHocPhan = reader["TenHocPhan"].ToString();
-                    hp.SoTinChi = (int)reader["SoTinChi"];
-                    hp.MoTa = reader["MoTa"].ToString();
+                    user.ID = (int)reader["ID"];
+                    user.Username = reader["Username"].ToString();
+                    user.Password = reader["Password"].ToString();
+                    user.Role = reader["Role"].ToString();
+                }
+                else
+                {
+                    return NotFound();
                 }
             }
 
-            return View(hp);
+            return View(user);
         }
 
         [HttpPost]
-        public IActionResult Edit(HocPhan hp)
+        public IActionResult Edit(NguoiDung user)
         {
             if (HttpContext.Session.GetString("Username") == null)
             {
@@ -197,24 +224,28 @@ namespace QuanLyHocPhanMVC.Controllers
                 return View("AccessDenied");
             }
 
+            if (string.IsNullOrEmpty(user.Username) || string.IsNullOrEmpty(user.Password))
+            {
+                ViewBag.Error = "Username và Password không được để trống!";
+                return View(user);
+            }
+
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 conn.Open();
 
-                string query = @"UPDATE HocPhan
-                                SET MaHocPhan=@ma,
-                                    TenHocPhan=@ten,
-                                    SoTinChi=@stc,
-                                    MoTa=@mota
-                                WHERE IDHocPhan=@id";
+                string query = @"UPDATE NguoiDung
+                                SET Username=@username,
+                                    Password=@password,
+                                    Role=@role
+                                WHERE ID=@id";
 
                 SqlCommand cmd = new SqlCommand(query, conn);
 
-                cmd.Parameters.AddWithValue("@id", hp.IDHocPhan);
-                cmd.Parameters.AddWithValue("@ma", hp.MaHocPhan);
-                cmd.Parameters.AddWithValue("@ten", hp.TenHocPhan);
-                cmd.Parameters.AddWithValue("@stc", hp.SoTinChi);
-                cmd.Parameters.AddWithValue("@mota", hp.MoTa);
+                cmd.Parameters.AddWithValue("@id", user.ID);
+                cmd.Parameters.AddWithValue("@username", user.Username);
+                cmd.Parameters.AddWithValue("@password", user.Password);
+                cmd.Parameters.AddWithValue("@role", user.Role ?? "GiaoVien");
 
                 cmd.ExecuteNonQuery();
             }
@@ -236,104 +267,13 @@ namespace QuanLyHocPhanMVC.Controllers
                 return View("AccessDenied");
             }
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                conn.Open();
-
-                string query = "DELETE FROM HocPhan WHERE IDHocPhan=@id";
-
-                SqlCommand cmd = new SqlCommand(query, conn);
-
-                cmd.Parameters.AddWithValue("@id", id);
-
-                cmd.ExecuteNonQuery();
-            }
-
-            return RedirectToAction("Index");
-        }
-        public IActionResult DanhSach(string search, int page = 1)
-        {
-            List<HocPhan> list = new List<HocPhan>();
-
-            int pageSize = 10;
-            int start = (page - 1) * pageSize;
+            NguoiDung user = new NguoiDung();
 
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 conn.Open();
 
-                string query;
-
-                if (string.IsNullOrEmpty(search))
-                {
-                    query = @"SELECT * FROM HocPhan
-                      ORDER BY IDHocPhan
-                      OFFSET @start ROWS
-                      FETCH NEXT @size ROWS ONLY";
-                }
-                else
-                {
-                    query = @"SELECT * FROM HocPhan
-                      WHERE TenHocPhan LIKE @search
-                      OR MaHocPhan LIKE @search
-                      ORDER BY IDHocPhan
-                      OFFSET @start ROWS
-                      FETCH NEXT @size ROWS ONLY";
-                }
-
-                SqlCommand cmd = new SqlCommand(query, conn);
-
-                cmd.Parameters.AddWithValue("@start", start);
-                cmd.Parameters.AddWithValue("@size", pageSize);
-
-                if (!string.IsNullOrEmpty(search))
-                {
-                    cmd.Parameters.AddWithValue("@search", "%" + search + "%");
-                }
-
-                SqlDataReader reader = cmd.ExecuteReader();
-
-                while (reader.Read())
-                {
-                    HocPhan hp = new HocPhan();
-
-                    hp.IDHocPhan = (int)reader["IDHocPhan"];
-                    hp.MaHocPhan = reader["MaHocPhan"].ToString();
-                    hp.TenHocPhan = reader["TenHocPhan"].ToString();
-                    hp.SoTinChi = (int)reader["SoTinChi"];
-                    hp.MoTa = reader["MoTa"].ToString();
-
-                    list.Add(hp);
-                }
-            }
-
-            int totalRows = 0;
-
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                conn.Open();
-
-                string countQuery = "SELECT COUNT(*) FROM HocPhan";
-
-                SqlCommand cmd = new SqlCommand(countQuery, conn);
-
-                totalRows = (int)cmd.ExecuteScalar();
-            }
-
-            ViewBag.TotalPages = (int)Math.Ceiling((double)totalRows / pageSize);
-            ViewBag.Page = page;
-
-            return View(list);
-        }
-        public IActionResult ChiTiet(int id)
-        {
-            HocPhan hp = new HocPhan();
-
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                conn.Open();
-
-                string query = "SELECT * FROM HocPhan WHERE IDHocPhan=@id";
+                string query = "SELECT * FROM NguoiDung WHERE ID=@id";
 
                 SqlCommand cmd = new SqlCommand(query, conn);
 
@@ -343,15 +283,49 @@ namespace QuanLyHocPhanMVC.Controllers
 
                 if (reader.Read())
                 {
-                    hp.IDHocPhan = (int)reader["IDHocPhan"];
-                    hp.MaHocPhan = reader["MaHocPhan"].ToString();
-                    hp.TenHocPhan = reader["TenHocPhan"].ToString();
-                    hp.SoTinChi = (int)reader["SoTinChi"];
-                    hp.MoTa = reader["MoTa"].ToString();
+                    user.ID = (int)reader["ID"];
+                    user.Username = reader["Username"].ToString();
+                    user.Password = reader["Password"].ToString();
+                    user.Role = reader["Role"].ToString();
+                }
+                else
+                {
+                    return NotFound();
                 }
             }
 
-            return View(hp);
+            return View(user);
+        }
+
+        [HttpPost]
+        public IActionResult ConfirmDelete(int id)
+        {
+            if (HttpContext.Session.GetString("Username") == null)
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            string userRole = HttpContext.Session.GetString("Role");
+            if (userRole != "Admin")
+            {
+                ViewBag.ErrorMessage = "Bạn không có quyền truy cập!";
+                return View("AccessDenied");
+            }
+
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                conn.Open();
+
+                string query = "DELETE FROM NguoiDung WHERE ID=@id";
+
+                SqlCommand cmd = new SqlCommand(query, conn);
+
+                cmd.Parameters.AddWithValue("@id", id);
+
+                cmd.ExecuteNonQuery();
+            }
+
+            return RedirectToAction("Index");
         }
     }
 }

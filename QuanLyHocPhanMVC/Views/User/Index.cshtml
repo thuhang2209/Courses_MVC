@@ -1,0 +1,84 @@
+@{
+    ViewData["Title"] = "Quản lý Người dùng";
+}
+
+<a href="/User/Create" class="btn btn-primary">Thêm người dùng mới</a>
+<br /><br />
+
+@model List<QuanLyHocPhanMVC.Models.NguoiDung>
+
+<h2>Danh sách Người dùng</h2>
+
+<table border="1" cellpadding="10">
+    <form method="get">
+        <input type="text" name="search" placeholder="Tìm theo Username hoặc Role..." value="@ViewBag.Search" />
+        <button type="submit">Tìm kiếm</button>
+    </form>
+
+    <br />
+
+    <tr>
+        <th>ID</th>
+        <th>Username</th>
+        <th>Password</th>
+        <th>Role</th>
+        <th>Hành động</th>
+    </tr>
+
+    @foreach (var user in Model)
+    {
+        <tr>
+            <td>@user.ID</td>
+            <td>@user.Username</td>
+            <td>@user.Password</td>
+            <td>
+                @if (user.Role == "Admin")
+                {
+                    <span style="color: red; font-weight: bold;">@user.Role</span>
+                }
+                else if (user.Role == "GiaoVien")
+                {
+                    <span style="color: blue;">@user.Role</span>
+                }
+                else
+                {
+                    <span style="color: green;">@user.Role</span>
+                }
+            </td>
+            <td>
+                <a href="/User/Edit/@user.ID">Sửa</a> |
+                <a href="/User/Delete/@user.ID"
+                   onclick="return confirm('Bạn có chắc muốn xóa người dùng này không?')">
+                    Xóa
+                </a>
+            </td>
+        </tr>
+    }
+
+</table>
+
+<br />
+
+<div class="pagination">
+    @if (ViewBag.Page > 1)
+    {
+        <a href="/User/Index?page=@(ViewBag.Page - 1)">Trang trước</a>
+    }
+
+    @for (int i = 1; i <= ViewBag.TotalPages; i++)
+    {
+        if (i == ViewBag.Page)
+        {
+            <strong>@i</strong>
+        }
+        else
+        {
+            <a href="/User/Index?page=@i">@i</a>
+        }
+    }
+
+    @if (ViewBag.Page < ViewBag.TotalPages)
+    {
+        <a href="/User/Index?page=@(ViewBag.Page + 1)">Trang sau</a>
+    }
+</div>

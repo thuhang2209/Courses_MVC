@@ -27,18 +27,20 @@ namespace QuanLyHocPhanMVC.Controllers
             {
                 conn.Open();
 
-                string query = "SELECT COUNT(*) FROM NguoiDung WHERE Username=@u AND Password=@p";
+                string query = "SELECT Role FROM NguoiDung WHERE Username=@u AND Password=@p";
 
                 SqlCommand cmd = new SqlCommand(query, conn);
 
                 cmd.Parameters.AddWithValue("@u", model.Username);
                 cmd.Parameters.AddWithValue("@p", model.Password);
 
-                int count = (int)cmd.ExecuteScalar();
+                var result = cmd.ExecuteScalar();
 
-                if (count > 0)
+                if (result != null)
                 {
-                    HttpContext.Session.SetString("Admin", model.Username);
+                    string role = result.ToString();
+                    HttpContext.Session.SetString("Username", model.Username);
+                    HttpContext.Session.SetString("Role", role);
 
                     return RedirectToAction("Index", "HocPhan");
                 }

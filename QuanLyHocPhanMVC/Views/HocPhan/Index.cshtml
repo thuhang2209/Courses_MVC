@@ -1,9 +1,26 @@
-﻿<a href="/HocPhan/Create">Thêm học phần</a>
-<br /><br />
+﻿@{
+    string userRole = Context.Session.GetString("Role");
+    bool isAdmin = userRole == "Admin";
+}
+
+@if (isAdmin)
+{
+    <a href="/HocPhan/Create">Thêm học phần</a>
+    <br /><br />
+}
 
 @model List<QuanLyHocPhanMVC.Models.HocPhan>
 
 <h2>Danh sách học phần</h2>
+
+@if (!isAdmin)
+{
+    <div style="background-color: #e7f3ff; border: 1px solid #b3d9ff; padding: 10px; margin-bottom: 15px; border-radius: 5px;">
+        <p style="color: #004085; margin: 0;">
+            <strong>ℹ️ Bạn đang ở chế độ Xem:</strong> Bạn chỉ có quyền xem các học phần. Liên hệ Quản trị viên để chỉnh sửa.
+        </p>
+    </div>
+}
 
 <table border="1" cellpadding="10">
     <form method="get">
@@ -22,7 +39,10 @@
         <th>Tên học phần</th>
         <th>Số tín chỉ</th>
         <th>Mô tả</th>
-        <th>Action</th>
+        @if (isAdmin)
+        {
+            <th>Action</th>
+        }
     </tr>
 
     @foreach (var hp in Model)
@@ -34,13 +54,16 @@
             <td>@hp.SoTinChi</td>
             <td>@hp.MoTa</td>
 
-            <td>
-                <a href="/HocPhan/Edit/@hp.IDHocPhan">Edit</a> |
-                <a href="/HocPhan/Delete/@hp.IDHocPhan"
-                   onclick="return confirm('Bạn có chắc muốn xóa học phần này không?')">
-                    Delete
-                </a>
-            </td>
+            @if (isAdmin)
+            {
+                <td>
+                    <a href="/HocPhan/Edit/@hp.IDHocPhan">Edit</a> |
+                    <a href="/HocPhan/Delete/@hp.IDHocPhan"
+                       onclick="return confirm('Bạn có chắc muốn xóa học phần này không?')">
+                        Delete
+                    </a>
+                </td>
+            }
 
         </tr>
     }
