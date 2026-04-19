@@ -33,10 +33,6 @@ Dự án ASP.NET Core MVC quản lý học phần cho môn Lập trình Web.
 3. Kiểm tra connection string nếu cần.
 4. Mở `QuanLyHocPhanMVC.sln` và chạy project.
 
-## Tài khoản mẫu
-- Username: `admin`
-- Password: `123`
-- Role: `Admin`
 
 ## Ghi chú
 - Project đang dùng ADO.NET với SQL Server.
