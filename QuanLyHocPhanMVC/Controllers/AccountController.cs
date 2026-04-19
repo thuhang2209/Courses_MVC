@@ -16,13 +16,18 @@ namespace QuanLyHocPhanMVC.Controllers
         // Hiển thị trang Login
         public IActionResult Login()
         {
-            return View();
+            return View(new LoginViewModel());
         }
 
         // Xử lý Login
         [HttpPost]
-        public IActionResult Login(NguoiDung model)
+        public IActionResult Login(LoginViewModel model)
         {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 conn.Open();

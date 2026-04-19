@@ -1,35 +1,81 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using System.Data.SqlClient;
+using System.Text;
 
 namespace QuanLyHocPhanMVC.Controllers
 {
-    public class DashboardController : Controller
+    public class DashboardController : AppController
     {
-        string connectionString = @"Server=DESKTOP-AHVKPFM\SQLEXPRESS01;Database=QuanLyHocPhan;Trusted_Connection=True;";
+        private readonly string connectionString = @"Server=(localdb)\mssqllocaldb;Database=QuanLyHocPhan;Trusted_Connection=True;TrustServerCertificate=True;";
 
         public IActionResult Index()
         {
-            if (HttpContext.Session.GetString("Username") == null)
+            var loginResult = RequireLogin();
+            if (loginResult != null)
             {
-                return RedirectToAction("Login", "Account");
+                return loginResult;
             }
 
-            string userRole = HttpContext.Session.GetString("Role");
-            string username = HttpContext.Session.GetString("Username");
+            string userRole = CurrentRole;
+            string username = HttpContext.Session.GetString("Username") ?? string.Empty;
 
             ViewBag.Username = username;
             ViewBag.Role = userRole;
 
-            if (userRole == "Admin")
+            if (string.Equals(userRole, "Admin", StringComparison.OrdinalIgnoreCase))
             {
                 LoadAdminDashboard();
             }
-            else if (userRole == "GiaoVien")
+            else if (string.Equals(userRole, "GiaoVien", StringComparison.OrdinalIgnoreCase))
             {
                 LoadTeacherDashboard();
             }
 
             return View();
+        }
+
+        public IActionResult ExportCsv()
+        {
+            var loginResult = RequireLogin();
+            if (loginResult != null)
+            {
+                return loginResult;
+            }
+
+            if (!string.Equals(CurrentRole, "Admin", StringComparison.OrdinalIgnoreCase))
+            {
+                ViewBag.ErrorMessage = "Bạn không có quyền truy cập!";
+                return View("AccessDenied");
+            }
+
+            int tongHocPhan = 0;
+            int tongTinChi = 0;
+            int tongNguoiDung = 0;
+            int soAdmin = 0;
+            int soGiaoVien = 0;
+
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                conn.Open();
+
+                tongHocPhan = Convert.ToInt32(new SqlCommand("SELECT COUNT(*) FROM HocPhan", conn).ExecuteScalar());
+                var tongTinChiResult = new SqlCommand("SELECT SUM(SoTinChi) FROM HocPhan", conn).ExecuteScalar();
+                tongTinChi = tongTinChiResult != null ? Convert.ToInt32(tongTinChiResult) : 0;
+                tongNguoiDung = Convert.ToInt32(new SqlCommand("SELECT COUNT(*) FROM NguoiDung", conn).ExecuteScalar());
+                soAdmin = Convert.ToInt32(new SqlCommand("SELECT COUNT(*) FROM NguoiDung WHERE Role='Admin'", conn).ExecuteScalar());
+                soGiaoVien = Convert.ToInt32(new SqlCommand("SELECT COUNT(*) FROM NguoiDung WHERE Role='GiaoVien'", conn).ExecuteScalar());
+            }
+
+            var csv = new StringBuilder();
+            csv.AppendLine("Chi tieu,Gia tri");
+            csv.AppendLine($"Tong hoc phan,{tongHocPhan}");
+            csv.AppendLine($"Tong tin chi,{tongTinChi}");
+            csv.AppendLine($"Tong nguoi dung,{tongNguoiDung}");
+            csv.AppendLine($"So Admin,{soAdmin}");
+            csv.AppendLine($"So GiaoVien,{soGiaoVien}");
+
+            return File(Encoding.UTF8.GetBytes(csv.ToString()), "text/csv", $"dashboard_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
         }
 
         private void LoadAdminDashboard()

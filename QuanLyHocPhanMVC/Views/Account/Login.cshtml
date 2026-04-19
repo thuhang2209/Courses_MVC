@@ -1,4 +1,4 @@
-﻿@model QuanLyHocPhanMVC.Models.NguoiDung
+﻿@model QuanLyHocPhanMVC.Models.LoginViewModel
 
 @{
     ViewData["Title"] = "Đăng nhập hệ thống";
@@ -16,16 +16,18 @@
                 <p class="text-muted small">Vui lòng đăng nhập để quản lý học phần</p>
             </div>
 
-            <form method="post">
+            <form method="post" novalidate>
+                <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
                 <div class="mb-3">
                     <label class="form-label small fw-bold text-uppercase text-muted">Tên đăng nhập</label>
                     <div class="input-group">
                         <span class="input-group-text bg-light border-end-0" style="border-radius: 12px 0 0 12px;">
                             <i class="bi bi-person text-muted"></i>
                         </span>
-                        <input type="text" name="Username" class="form-control border-start-0 ps-0"
-                               placeholder="admin" required style="border-radius: 0 12px 12px 0;" />
+                        <input asp-for="Username" class="form-control border-start-0 ps-0"
+                               placeholder="admin" style="border-radius: 0 12px 12px 0;" />
                     </div>
+                    <span asp-validation-for="Username" class="text-danger small"></span>
                 </div>
 
                 <div class="mb-3">
@@ -34,9 +36,10 @@
                         <span class="input-group-text bg-light border-end-0" style="border-radius: 12px 0 0 12px;">
                             <i class="bi bi-key text-muted"></i>
                         </span>
-                        <input type="password" name="Password" class="form-control border-start-0 ps-0"
-                               placeholder="••••••••" required style="border-radius: 0 12px 12px 0;" />
+                        <input asp-for="Password" type="password" class="form-control border-start-0 ps-0"
+                               placeholder="••••••••" style="border-radius: 0 12px 12px 0;" />
                     </div>
+                    <span asp-validation-for="Password" class="text-danger small"></span>
                 </div>
 
                 @if (ViewBag.Error != null)
@@ -64,3 +67,7 @@
         </p>
     </div>
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

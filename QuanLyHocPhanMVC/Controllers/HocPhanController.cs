@@ -2,18 +2,20 @@
 using Microsoft.AspNetCore.Http;
 using System.Data.SqlClient;
 using QuanLyHocPhanMVC.Models;
+using ClosedXML.Excel;
 
 namespace QuanLyHocPhanMVC.Controllers
 {
-    public class HocPhanController : Controller
+    public class HocPhanController : AppController
     {
-        string connectionString = @"Server=DESKTOP-AHVKPFM\SQLEXPRESS01;Database=QuanLyHocPhan;Trusted_Connection=True;";
+        string connectionString = @"Server=(localdb)\mssqllocaldb;Database=QuanLyHocPhan;Trusted_Connection=True;TrustServerCertificate=True;";
 
         public IActionResult Index(string search, int page = 1)
         {
-            if (HttpContext.Session.GetString("Username") == null)
+            var loginResult = RequireLogin();
+            if (loginResult != null)
             {
-                return RedirectToAction("Login", "Account");
+                return loginResult;
             }
 
             List<HocPhan> list = new List<HocPhan>();
@@ -89,16 +91,10 @@ namespace QuanLyHocPhanMVC.Controllers
 
         public IActionResult Create()
         {
-            if (HttpContext.Session.GetString("Username") == null)
+            var roleResult = RequireRole("Admin");
+            if (roleResult != null)
             {
-                return RedirectToAction("Login", "Account");
-            }
-
-            string userRole = HttpContext.Session.GetString("Role");
-            if (userRole != "Admin")
-            {
-                ViewBag.ErrorMessage = "Bạn không có quyền truy cập!";
-                return View("AccessDenied");
+                return roleResult;
             }
 
             return View();
@@ -107,21 +103,33 @@ namespace QuanLyHocPhanMVC.Controllers
         [HttpPost]
         public IActionResult Create(HocPhan hp)
         {
-            if (HttpContext.Session.GetString("Username") == null)
+            var roleResult = RequireRole("Admin");
+            if (roleResult != null)
             {
-                return RedirectToAction("Login", "Account");
+                return roleResult;
             }
 
-            string userRole = HttpContext.Session.GetString("Role");
-            if (userRole != "Admin")
+            hp.MaHocPhan = (hp.MaHocPhan ?? string.Empty).Trim();
+
+            if (!ModelState.IsValid)
             {
-                ViewBag.ErrorMessage = "Bạn không có quyền truy cập!";
-                return View("AccessDenied");
+                return View(hp);
             }
 
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 conn.Open();
+
+                string checkQuery = "SELECT COUNT(*) FROM HocPhan WHERE MaHocPhan=@ma";
+                SqlCommand checkCmd = new SqlCommand(checkQuery, conn);
+                checkCmd.Parameters.AddWithValue("@ma", hp.MaHocPhan);
+
+                int duplicateCount = (int)checkCmd.ExecuteScalar();
+                if (duplicateCount > 0)
+                {
+                    ModelState.AddModelError(nameof(hp.MaHocPhan), "Mã học phần đã tồn tại. Vui lòng nhập mã khác.");
+                    return View(hp);
+                }
 
                 string query = @"INSERT INTO HocPhan
                                 (MaHocPhan,TenHocPhan,SoTinChi,MoTa)
@@ -143,16 +151,10 @@ namespace QuanLyHocPhanMVC.Controllers
 
         public IActionResult Edit(int id)
         {
-            if (HttpContext.Session.GetString("Username") == null)
+            var roleResult = RequireRole("Admin");
+            if (roleResult != null)
             {
-                return RedirectToAction("Login", "Account");
-            }
-
-            string userRole = HttpContext.Session.GetString("Role");
-            if (userRole != "Admin")
-            {
-                ViewBag.ErrorMessage = "Bạn không có quyền truy cập!";
-                return View("AccessDenied");
+                return roleResult;
             }
 
             HocPhan hp = new HocPhan();
@@ -185,21 +187,34 @@ namespace QuanLyHocPhanMVC.Controllers
         [HttpPost]
         public IActionResult Edit(HocPhan hp)
         {
-            if (HttpContext.Session.GetString("Username") == null)
+            var roleResult = RequireRole("Admin");
+            if (roleResult != null)
             {
-                return RedirectToAction("Login", "Account");
+                return roleResult;
             }
 
-            string userRole = HttpContext.Session.GetString("Role");
-            if (userRole != "Admin")
+            hp.MaHocPhan = (hp.MaHocPhan ?? string.Empty).Trim();
+
+            if (!ModelState.IsValid)
             {
-                ViewBag.ErrorMessage = "Bạn không có quyền truy cập!";
-                return View("AccessDenied");
+                return View(hp);
             }
 
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 conn.Open();
+
+                string checkQuery = "SELECT COUNT(*) FROM HocPhan WHERE MaHocPhan=@ma AND IDHocPhan<>@id";
+                SqlCommand checkCmd = new SqlCommand(checkQuery, conn);
+                checkCmd.Parameters.AddWithValue("@ma", hp.MaHocPhan);
+                checkCmd.Parameters.AddWithValue("@id", hp.IDHocPhan);
+
+                int duplicateCount = (int)checkCmd.ExecuteScalar();
+                if (duplicateCount > 0)
+                {
+                    ModelState.AddModelError(nameof(hp.MaHocPhan), "Mã học phần đã tồn tại. Vui lòng nhập mã khác.");
+                    return View(hp);
+                }
 
                 string query = @"UPDATE HocPhan
                                 SET MaHocPhan=@ma,
@@ -224,21 +239,20 @@ namespace QuanLyHocPhanMVC.Controllers
 
         public IActionResult Delete(int id)
         {
-            if (HttpContext.Session.GetString("Username") == null)
+            var roleResult = RequireRole("Admin");
+            if (roleResult != null)
             {
-                return RedirectToAction("Login", "Account");
-            }
-
-            string userRole = HttpContext.Session.GetString("Role");
-            if (userRole != "Admin")
-            {
-                ViewBag.ErrorMessage = "Bạn không có quyền truy cập!";
-                return View("AccessDenied");
+                return roleResult;
             }
 
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 conn.Open();
+
+                string deleteAssignQuery = "DELETE FROM PhanCongHocPhan WHERE IDHocPhan=@id";
+                SqlCommand deleteAssignCmd = new SqlCommand(deleteAssignQuery, conn);
+                deleteAssignCmd.Parameters.AddWithValue("@id", id);
+                deleteAssignCmd.ExecuteNonQuery();
 
                 string query = "DELETE FROM HocPhan WHERE IDHocPhan=@id";
 
@@ -325,6 +339,231 @@ namespace QuanLyHocPhanMVC.Controllers
 
             return View(list);
         }
+
+        public IActionResult ExportCsv(string search)
+        {
+            return ExportExcel(search);
+        }
+
+        public IActionResult ExportExcel(string search)
+        {
+            var loginResult = RequireLogin();
+            if (loginResult != null)
+            {
+                return loginResult;
+            }
+
+            List<HocPhan> list = new List<HocPhan>();
+
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                conn.Open();
+
+                string query = @"SELECT * FROM HocPhan";
+                if (!string.IsNullOrEmpty(search))
+                {
+                    query += @" WHERE TenHocPhan LIKE @search OR MaHocPhan LIKE @search";
+                }
+
+                query += @" ORDER BY IDHocPhan";
+
+                SqlCommand cmd = new SqlCommand(query, conn);
+                if (!string.IsNullOrEmpty(search))
+                {
+                    cmd.Parameters.AddWithValue("@search", "%" + search + "%");
+                }
+
+                SqlDataReader reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    list.Add(new HocPhan
+                    {
+                        IDHocPhan = (int)reader["IDHocPhan"],
+                        MaHocPhan = reader["MaHocPhan"].ToString() ?? string.Empty,
+                        TenHocPhan = reader["TenHocPhan"].ToString() ?? string.Empty,
+                        SoTinChi = (int)reader["SoTinChi"],
+                        MoTa = reader["MoTa"].ToString() ?? string.Empty
+                    });
+                }
+            }
+
+            using var workbook = new XLWorkbook();
+            var worksheet = workbook.Worksheets.Add("HocPhan");
+
+            worksheet.Cell(1, 1).Value = "ID";
+            worksheet.Cell(1, 2).Value = "MaHocPhan";
+            worksheet.Cell(1, 3).Value = "TenHocPhan";
+            worksheet.Cell(1, 4).Value = "SoTinChi";
+            worksheet.Cell(1, 5).Value = "MoTa";
+
+            var row = 2;
+            foreach (var hp in list)
+            {
+                worksheet.Cell(row, 1).Value = hp.IDHocPhan;
+                worksheet.Cell(row, 2).Value = hp.MaHocPhan;
+                worksheet.Cell(row, 3).Value = hp.TenHocPhan;
+                worksheet.Cell(row, 4).Value = hp.SoTinChi;
+                worksheet.Cell(row, 5).Value = hp.MoTa;
+                row++;
+            }
+
+            worksheet.Columns().AdjustToContents();
+            worksheet.Row(1).Style.Font.Bold = true;
+
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+            var content = stream.ToArray();
+
+            return File(
+                content,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                $"hocphan_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");
+        }
+
+        public IActionResult MonHocCuaToi(string search)
+        {
+            var loginResult = RequireLogin();
+            if (loginResult != null)
+            {
+                return loginResult;
+            }
+
+            string userRole = CurrentRole;
+            if (userRole != "GiaoVien")
+            {
+                ViewBag.ErrorMessage = "Chỉ giáo viên mới có quyền truy cập trang này!";
+                return View("AccessDenied");
+            }
+
+            string username = HttpContext.Session.GetString("Username") ?? string.Empty;
+            List<HocPhan> list = new List<HocPhan>();
+
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                conn.Open();
+
+                string query = @"SELECT hp.*
+                                 FROM HocPhan hp
+                                 INNER JOIN PhanCongHocPhan pc ON hp.IDHocPhan = pc.IDHocPhan
+                                 INNER JOIN NguoiDung nd ON pc.IDNguoiDung = nd.ID
+                                 WHERE nd.Username = @username";
+
+                if (!string.IsNullOrEmpty(search))
+                {
+                    query += " AND (hp.TenHocPhan LIKE @search OR hp.MaHocPhan LIKE @search)";
+                }
+
+                query += " ORDER BY hp.IDHocPhan";
+
+                SqlCommand cmd = new SqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@username", username);
+
+                if (!string.IsNullOrEmpty(search))
+                {
+                    cmd.Parameters.AddWithValue("@search", "%" + search + "%");
+                }
+
+                SqlDataReader reader = cmd.ExecuteReader();
+
+                while (reader.Read())
+                {
+                    HocPhan hp = new HocPhan();
+
+                    hp.IDHocPhan = (int)reader["IDHocPhan"];
+                    hp.MaHocPhan = reader["MaHocPhan"].ToString();
+                    hp.TenHocPhan = reader["TenHocPhan"].ToString();
+                    hp.SoTinChi = (int)reader["SoTinChi"];
+                    hp.MoTa = reader["MoTa"].ToString();
+
+                    list.Add(hp);
+                }
+            }
+
+            ViewBag.Search = search;
+            return View(list);
+        }
+
+        public IActionResult SuaMoTaMonHocCuaToi(int id)
+        {
+            var loginResult = RequireLogin();
+            if (loginResult != null)
+            {
+                return loginResult;
+            }
+
+            string userRole = CurrentRole;
+            if (userRole != "GiaoVien")
+            {
+                ViewBag.ErrorMessage = "Chỉ giáo viên mới có quyền truy cập trang này!";
+                return View("AccessDenied");
+            }
+
+            string username = HttpContext.Session.GetString("Username") ?? string.Empty;
+
+            if (!KiemTraHocPhanPhuTrach(id, username))
+            {
+                ViewBag.ErrorMessage = "Bạn không phụ trách học phần này!";
+                return View("AccessDenied");
+            }
+
+            HocPhan hp = LayHocPhanTheoId(id);
+            if (hp == null)
+            {
+                return NotFound();
+            }
+
+            return View(hp);
+        }
+
+        [HttpPost]
+        public IActionResult SuaMoTaMonHocCuaToi(HocPhan hp)
+        {
+            var loginResult = RequireLogin();
+            if (loginResult != null)
+            {
+                return loginResult;
+            }
+
+            string userRole = CurrentRole;
+            if (userRole != "GiaoVien")
+            {
+                ViewBag.ErrorMessage = "Chỉ giáo viên mới có quyền truy cập trang này!";
+                return View("AccessDenied");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return View(hp);
+            }
+
+            string username = HttpContext.Session.GetString("Username") ?? string.Empty;
+
+            if (!KiemTraHocPhanPhuTrach(hp.IDHocPhan, username))
+            {
+                ViewBag.ErrorMessage = "Bạn không phụ trách học phần này!";
+                return View("AccessDenied");
+            }
+
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                conn.Open();
+
+                string query = @"UPDATE HocPhan
+                                 SET MoTa=@mota
+                                 WHERE IDHocPhan=@id";
+
+                SqlCommand cmd = new SqlCommand(query, conn);
+
+                cmd.Parameters.AddWithValue("@id", hp.IDHocPhan);
+                cmd.Parameters.AddWithValue("@mota", hp.MoTa ?? string.Empty);
+
+                cmd.ExecuteNonQuery();
+            }
+
+            TempData["SuccessMessage"] = "Cập nhật mô tả học phần thành công.";
+            return RedirectToAction("MonHocCuaToi");
+        }
+
         public IActionResult ChiTiet(int id)
         {
             HocPhan hp = new HocPhan();
@@ -353,5 +592,57 @@ namespace QuanLyHocPhanMVC.Controllers
 
             return View(hp);
         }
+
+        private bool KiemTraHocPhanPhuTrach(int idHocPhan, string username)
+        {
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                conn.Open();
+
+                string query = @"SELECT COUNT(*)
+                                 FROM PhanCongHocPhan pc
+                                 INNER JOIN NguoiDung nd ON pc.IDNguoiDung = nd.ID
+                                 WHERE pc.IDHocPhan = @idHocPhan AND nd.Username = @username";
+
+                SqlCommand cmd = new SqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@idHocPhan", idHocPhan);
+                cmd.Parameters.AddWithValue("@username", username);
+
+                return (int)cmd.ExecuteScalar() > 0;
+            }
+        }
+
+        private HocPhan? LayHocPhanTheoId(int id)
+        {
+            HocPhan hp = null;
+
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                conn.Open();
+
+                string query = "SELECT * FROM HocPhan WHERE IDHocPhan=@id";
+
+                SqlCommand cmd = new SqlCommand(query, conn);
+
+                cmd.Parameters.AddWithValue("@id", id);
+
+                SqlDataReader reader = cmd.ExecuteReader();
+
+                if (reader.Read())
+                {
+                    hp = new HocPhan
+                    {
+                        IDHocPhan = (int)reader["IDHocPhan"],
+                        MaHocPhan = reader["MaHocPhan"].ToString(),
+                        TenHocPhan = reader["TenHocPhan"].ToString(),
+                        SoTinChi = (int)reader["SoTinChi"],
+                        MoTa = reader["MoTa"].ToString()
+                    };
+                }
+            }
+
+            return hp;
+        }
+
     }
 }

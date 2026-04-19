@@ -24,33 +24,39 @@
 
 <div id="features" class="row g-4 mb-5">
     <div class="col-md-6 col-lg-4">
-        <div class="custom-card h-100 border-0 shadow-sm p-4 text-center hover-up">
-            <div class="bg-primary bg-opacity-10 text-primary rounded-4 d-inline-flex p-3 mb-3">
-                <i class="bi bi-collection-fill fs-3"></i>
+        <a href="/HocPhan/DanhSach" class="text-decoration-none text-reset d-block h-100">
+            <div class="custom-card h-100 border-0 shadow-sm p-4 text-center hover-up clickable-card">
+                <div class="bg-primary bg-opacity-10 text-primary rounded-4 d-inline-flex p-3 mb-3">
+                    <i class="bi bi-collection-fill fs-3"></i>
+                </div>
+                <h4 class="fw-bold">Quản lý Học phần</h4>
+                <p class="text-muted small">Tra cứu, thêm mới và chỉnh sửa danh mục học phần một cách trực quan.</p>
             </div>
-            <h4 class="fw-bold">Quản lý Học phần</h4>
-            <p class="text-muted small">Tra cứu, thêm mới và chỉnh sửa danh mục học phần một cách trực quan.</p>
-        </div>
+        </a>
     </div>
 
     <div class="col-md-6 col-lg-4">
-        <div class="custom-card h-100 border-0 shadow-sm p-4 text-center hover-up">
-            <div class="bg-success bg-opacity-10 text-success rounded-4 d-inline-flex p-3 mb-3">
-                <i class="bi bi-graph-up-arrow fs-3"></i>
+        <a href="/Dashboard/Index" class="text-decoration-none text-reset d-block h-100">
+            <div class="custom-card h-100 border-0 shadow-sm p-4 text-center hover-up clickable-card">
+                <div class="bg-success bg-opacity-10 text-success rounded-4 d-inline-flex p-3 mb-3">
+                    <i class="bi bi-graph-up-arrow fs-3"></i>
+                </div>
+                <h4 class="fw-bold">Thống kê dữ liệu</h4>
+                <p class="text-muted small">Theo dõi số lượng tín chỉ và phân loại môn học thông qua Dashboard.</p>
             </div>
-            <h4 class="fw-bold">Thống kê dữ liệu</h4>
-            <p class="text-muted small">Theo dõi số lượng tín chỉ và phân loại môn học thông qua Dashboard.</p>
-        </div>
+        </a>
     </div>
 
     <div class="col-md-6 col-lg-4">
-        <div class="custom-card h-100 border-0 shadow-sm p-4 text-center hover-up">
-            <div class="bg-warning bg-opacity-10 text-warning rounded-4 d-inline-flex p-3 mb-3">
-                <i class="bi bi-shield-lock-fill fs-3"></i>
+        <a href="/Account/Login" class="text-decoration-none text-reset d-block h-100">
+            <div class="custom-card h-100 border-0 shadow-sm p-4 text-center hover-up clickable-card">
+                <div class="bg-warning bg-opacity-10 text-warning rounded-4 d-inline-flex p-3 mb-3">
+                    <i class="bi bi-shield-lock-fill fs-3"></i>
+                </div>
+                <h4 class="fw-bold">Bảo mật tối đa</h4>
+                <p class="text-muted small">Hệ thống phân quyền người dùng và bảo vệ dữ liệu an toàn tuyệt đối.</p>
             </div>
-            <h4 class="fw-bold">Bảo mật tối đa</h4>
-            <p class="text-muted small">Hệ thống phân quyền người dùng và bảo vệ dữ liệu an toàn tuyệt đối.</p>
-        </div>
+        </a>
     </div>
 </div>
 
@@ -83,6 +89,10 @@
         .hover-up:hover {
             transform: translateY(-10px);
         }
+
+    .clickable-card {
+        cursor: pointer;
+    }
 
     .animate-slide-up {
         animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);

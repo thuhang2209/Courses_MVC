@@ -13,23 +13,26 @@
 
 @model QuanLyHocPhanMVC.Models.NguoiDung
 
-<form method="post" style="max-width: 500px;">
+<form method="post" style="max-width: 500px;" novalidate>
+    <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
 
     <input type="hidden" name="ID" value="@Model.ID" />
 
     <div style="margin-bottom: 15px;">
         <label for="Username"><strong>Username:</strong></label>
-        <input type="text" id="Username" name="Username" value="@Model.Username" placeholder="Nhập username" required style="width: 100%; padding: 8px;" />
+        <input asp-for="Username" id="Username" placeholder="Nhập username" style="width: 100%; padding: 8px;" />
+        <span asp-validation-for="Username" class="text-danger small"></span>
     </div>
 
     <div style="margin-bottom: 15px;">
         <label for="Password"><strong>Password:</strong></label>
-        <input type="text" id="Password" name="Password" value="@Model.Password" placeholder="Nhập password" required style="width: 100%; padding: 8px;" />
+        <input asp-for="Password" id="Password" placeholder="Nhập password" style="width: 100%; padding: 8px;" />
+        <span asp-validation-for="Password" class="text-danger small"></span>
     </div>
 
     <div style="margin-bottom: 15px;">
         <label for="Role"><strong>Role:</strong></label>
-        <select id="Role" name="Role" style="width: 100%; padding: 8px;">
+        <select asp-for="Role" id="Role" style="width: 100%; padding: 8px;">
             @if (Model.Role == "GiaoVien")
             {
                 <option value="GiaoVien" selected>Giáo viên</option>
@@ -48,6 +51,7 @@
                 <option value="Admin">Quản trị viên</option>
             }
         </select>
+        <span asp-validation-for="Role" class="text-danger small"></span>
     </div>
 
     <div>
@@ -56,3 +60,7 @@
     </div>
 
 </form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

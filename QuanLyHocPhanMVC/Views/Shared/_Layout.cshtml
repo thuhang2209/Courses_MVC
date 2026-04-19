@@ -14,6 +14,9 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body>
+    @{
+        var currentRole = Context.Session.GetString("Role");
+    }
     <nav class="navbar navbar-expand-lg fixed-top">
         <div class="container-fluid px-4">
             <a class="navbar-brand d-flex align-items-center" asp-controller="Home" asp-action="Index">
@@ -31,7 +34,15 @@
                 <ul class="navbar-nav mx-auto bg-light rounded-pill px-3 py-1">
                     <li class="nav-item"><a class="nav-link px-3" asp-controller="Home" asp-action="Index">Trang chủ</a></li>
                     <li class="nav-item"><a class="nav-link px-3" asp-controller="HocPhan" asp-action="DanhSach">Học phần</a></li>
-                    <li class="nav-item"><a class="nav-link px-3" asp-controller="User" asp-action="Index">Quản lý Người dùng</a></li>
+                    @if (currentRole == "Admin")
+                    {
+                        <li class="nav-item"><a class="nav-link px-3" asp-controller="User" asp-action="Index">Quản lý Người dùng</a></li>
+                        <li class="nav-item"><a class="nav-link px-3" asp-controller="PhanCong" asp-action="Index">Phân công giảng dạy</a></li>
+                    }
+                    @if (currentRole == "GiaoVien")
+                    {
+                        <li class="nav-item"><a class="nav-link px-3" asp-controller="HocPhan" asp-action="MonHocCuaToi">Môn học của tôi</a></li>
+                    }
                     <li class="nav-item"><a class="nav-link px-3" asp-controller="Dashboard" asp-action="Index">Báo cáo</a></li>
                 </ul>
 

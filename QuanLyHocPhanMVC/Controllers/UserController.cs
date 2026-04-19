@@ -5,22 +5,16 @@ using QuanLyHocPhanMVC.Models;
 
 namespace QuanLyHocPhanMVC.Controllers
 {
-    public class UserController : Controller
+    public class UserController : AppController
     {
-        string connectionString = @"Server=DESKTOP-AHVKPFM\SQLEXPRESS01;Database=QuanLyHocPhan;Trusted_Connection=True;";
+        string connectionString = @"Server=(localdb)\mssqllocaldb;Database=QuanLyHocPhan;Trusted_Connection=True;TrustServerCertificate=True;";
 
         public IActionResult Index(string search, int page = 1)
         {
-            if (HttpContext.Session.GetString("Username") == null)
+            var roleResult = RequireRole("Admin");
+            if (roleResult != null)
             {
-                return RedirectToAction("Login", "Account");
-            }
-
-            string userRole = HttpContext.Session.GetString("Role");
-            if (userRole != "Admin")
-            {
-                ViewBag.ErrorMessage = "Bạn không có quyền truy cập!";
-                return View("AccessDenied");
+                return roleResult;
             }
 
             List<NguoiDung> list = new List<NguoiDung>();
@@ -96,16 +90,10 @@ namespace QuanLyHocPhanMVC.Controllers
 
         public IActionResult Create()
         {
-            if (HttpContext.Session.GetString("Username") == null)
+            var roleResult = RequireRole("Admin");
+            if (roleResult != null)
             {
-                return RedirectToAction("Login", "Account");
-            }
-
-            string userRole = HttpContext.Session.GetString("Role");
-            if (userRole != "Admin")
-            {
-                ViewBag.ErrorMessage = "Bạn không có quyền truy cập!";
-                return View("AccessDenied");
+                return roleResult;
             }
 
             return View();
@@ -114,16 +102,15 @@ namespace QuanLyHocPhanMVC.Controllers
         [HttpPost]
         public IActionResult Create(NguoiDung user)
         {
-            if (HttpContext.Session.GetString("Username") == null)
+            var roleResult = RequireRole("Admin");
+            if (roleResult != null)
             {
-                return RedirectToAction("Login", "Account");
+                return roleResult;
             }
 
-            string userRole = HttpContext.Session.GetString("Role");
-            if (userRole != "Admin")
+            if (!ModelState.IsValid)
             {
-                ViewBag.ErrorMessage = "Bạn không có quyền truy cập!";
-                return View("AccessDenied");
+                return View(user);
             }
 
             if (string.IsNullOrEmpty(user.Username) || string.IsNullOrEmpty(user.Password))
@@ -167,16 +154,10 @@ namespace QuanLyHocPhanMVC.Controllers
 
         public IActionResult Edit(int id)
         {
-            if (HttpContext.Session.GetString("Username") == null)
+            var roleResult = RequireRole("Admin");
+            if (roleResult != null)
             {
-                return RedirectToAction("Login", "Account");
-            }
-
-            string userRole = HttpContext.Session.GetString("Role");
-            if (userRole != "Admin")
-            {
-                ViewBag.ErrorMessage = "Bạn không có quyền truy cập!";
-                return View("AccessDenied");
+                return roleResult;
             }
 
             NguoiDung user = new NguoiDung();
@@ -212,16 +193,15 @@ namespace QuanLyHocPhanMVC.Controllers
         [HttpPost]
         public IActionResult Edit(NguoiDung user)
         {
-            if (HttpContext.Session.GetString("Username") == null)
+            var roleResult = RequireRole("Admin");
+            if (roleResult != null)
             {
-                return RedirectToAction("Login", "Account");
+                return roleResult;
             }
 
-            string userRole = HttpContext.Session.GetString("Role");
-            if (userRole != "Admin")
+            if (!ModelState.IsValid)
             {
-                ViewBag.ErrorMessage = "Bạn không có quyền truy cập!";
-                return View("AccessDenied");
+                return View(user);
             }
 
             if (string.IsNullOrEmpty(user.Username) || string.IsNullOrEmpty(user.Password))
@@ -255,16 +235,10 @@ namespace QuanLyHocPhanMVC.Controllers
 
         public IActionResult Delete(int id)
         {
-            if (HttpContext.Session.GetString("Username") == null)
+            var roleResult = RequireRole("Admin");
+            if (roleResult != null)
             {
-                return RedirectToAction("Login", "Account");
-            }
-
-            string userRole = HttpContext.Session.GetString("Role");
-            if (userRole != "Admin")
-            {
-                ViewBag.ErrorMessage = "Bạn không có quyền truy cập!";
-                return View("AccessDenied");
+                return roleResult;
             }
 
             NguoiDung user = new NguoiDung();
@@ -300,21 +274,20 @@ namespace QuanLyHocPhanMVC.Controllers
         [HttpPost]
         public IActionResult ConfirmDelete(int id)
         {
-            if (HttpContext.Session.GetString("Username") == null)
+            var roleResult = RequireRole("Admin");
+            if (roleResult != null)
             {
-                return RedirectToAction("Login", "Account");
-            }
-
-            string userRole = HttpContext.Session.GetString("Role");
-            if (userRole != "Admin")
-            {
-                ViewBag.ErrorMessage = "Bạn không có quyền truy cập!";
-                return View("AccessDenied");
+                return roleResult;
             }
 
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 conn.Open();
+
+                string deleteAssignQuery = "DELETE FROM PhanCongHocPhan WHERE IDNguoiDung=@id";
+                SqlCommand deleteAssignCmd = new SqlCommand(deleteAssignQuery, conn);
+                deleteAssignCmd.Parameters.AddWithValue("@id", id);
+                deleteAssignCmd.ExecuteNonQuery();
 
                 string query = "DELETE FROM NguoiDung WHERE ID=@id";
 

@@ -15,14 +15,15 @@
                 <p class="text-muted small">Cập nhật thông tin mới nhất cho mã học phần: <span class="fw-bold text-dark">@Model.MaHocPhan</span></p>
             </div>
 
-            <form method="post">
+            <form method="post" novalidate>
+                <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
                 <input type="hidden" name="IDHocPhan" value="@Model.IDHocPhan" />
 
                 <div class="mb-3">
                     <label class="form-label fw-semibold">Mã học phần</label>
                     <div class="input-group">
                         <span class="input-group-text bg-light border-end-0"><i class="bi bi-hash text-muted"></i></span>
-                        <input type="text" name="MaHocPhan" class="form-control border-start-0 bg-white" value="@Model.MaHocPhan" readonly />
+                        <input asp-for="MaHocPhan" class="form-control border-start-0 bg-white" readonly />
                     </div>
                     <small class="text-muted px-1">Mã định danh không thể thay đổi</small>
                 </div>
@@ -31,21 +32,24 @@
                     <label class="form-label fw-semibold">Tên học phần</label>
                     <div class="input-group">
                         <span class="input-group-text bg-light border-end-0"><i class="bi bi-bookmark-fill text-muted"></i></span>
-                        <input type="text" name="TenHocPhan" class="form-control border-start-0" value="@Model.TenHocPhan" required />
+                        <input asp-for="TenHocPhan" class="form-control border-start-0" />
                     </div>
+                    <span asp-validation-for="TenHocPhan" class="text-danger small"></span>
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label fw-semibold">Số tín chỉ</label>
                     <div class="input-group">
                         <span class="input-group-text bg-light border-end-0"><i class="bi bi-123 text-muted"></i></span>
-                        <input type="number" name="SoTinChi" class="form-control border-start-0" value="@Model.SoTinChi" min="1" required />
+                        <input asp-for="SoTinChi" type="number" class="form-control border-start-0" min="1" />
                     </div>
+                    <span asp-validation-for="SoTinChi" class="text-danger small"></span>
                 </div>
 
                 <div class="mb-4">
                     <label class="form-label fw-semibold">Mô tả học phần</label>
-                    <textarea name="MoTa" class="form-control" rows="3" style="border-radius: 12px;">@Model.MoTa</textarea>
+                    <textarea asp-for="MoTa" class="form-control" rows="3" style="border-radius: 12px;"></textarea>
+                    <span asp-validation-for="MoTa" class="text-danger small"></span>
                 </div>
 
                 <div class="d-grid gap-2">
@@ -58,3 +62,7 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
